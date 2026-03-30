@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
 from core.camera import CameraThread
 from core.session import SessionManager
 from core.handstand_session import HandstandSessionManager
-from core.sounds import HandstandSounds
+from core.sounds import HandstandSounds, SquatSounds
 from db.database import init_db
 
 
@@ -239,15 +239,18 @@ class MainWindow(QMainWindow):
         return row
 
     def _setup_backend(self) -> None:
+        self._sounds = HandstandSounds()
+        self._squat_sounds = SquatSounds()
+
         self._session = SessionManager(self)
+        self._session.session_started.connect(self._squat_sounds.play_start)
         self._session.reps_updated.connect(self._on_reps_updated)
         self._session.session_saved.connect(self._on_session_saved)
+        self._session.session_saved.connect(self._squat_sounds.play_end)
         self._session.session_ended.connect(self._camera_reset)
 
         self._hs_session = HandstandSessionManager(self)
         self._hs_session.session_saved.connect(self._on_handstand_saved)
-
-        self._sounds = HandstandSounds()
 
         self._camera = CameraThread(camera_index=0, parent=self)
         self._camera.frame_ready.connect(self._video.set_frame)
