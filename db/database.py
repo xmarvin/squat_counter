@@ -15,6 +15,14 @@ def init_db() -> None:
                 ended_at   TEXT NOT NULL
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS handstand_sessions (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                started_at TEXT NOT NULL,
+                ended_at   TEXT NOT NULL,
+                duration   REAL NOT NULL
+            )
+        """)
 
 
 def save_session(reps: int, started_at: datetime, ended_at: datetime) -> None:
@@ -48,6 +56,25 @@ def get_all_sessions() -> list[dict]:
         ).fetchall()
     return [
         {"id": r[0], "reps": r[1], "started_at": r[2], "ended_at": r[3]}
+        for r in rows
+    ]
+
+
+def save_handstand_session(started_at: datetime, ended_at: datetime, duration: float) -> None:
+    with _connect() as conn:
+        conn.execute(
+            "INSERT INTO handstand_sessions (started_at, ended_at, duration) VALUES (?, ?, ?)",
+            (started_at.isoformat(), ended_at.isoformat(), duration),
+        )
+
+
+def get_all_handstand_sessions() -> list[dict]:
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT id, started_at, ended_at, duration FROM handstand_sessions ORDER BY started_at DESC"
+        ).fetchall()
+    return [
+        {"id": r[0], "started_at": r[1], "ended_at": r[2], "duration": r[3]}
         for r in rows
     ]
 

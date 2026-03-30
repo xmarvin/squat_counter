@@ -15,6 +15,7 @@ from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QImage
 
 from core.detector import DetectorResult, SquatDetector
+from core.handstand_detector import HandstandDetector
 
 # Fraction of frame height at which we start zooming out
 ZOOM_OUT_THRESHOLD = 0.82
@@ -31,6 +32,9 @@ class CameraThread(QThread):
     frame_ready = pyqtSignal(QImage)
     person_detected = pyqtSignal(bool)
     rep_counted = pyqtSignal(int)
+    handstand_started = pyqtSignal()
+    handstand_lost = pyqtSignal()
+    handstand_state = pyqtSignal(str)
 
     def __init__(self, camera_index: int = 0, parent=None) -> None:
         super().__init__(parent)
@@ -45,12 +49,14 @@ class CameraThread(QThread):
         # Create detector here — MediaPipe initialises an EGL/GL context that must
         # stay on the same thread it was created on.
         detector = SquatDetector()
+        hs_detector = HandstandDetector()
         zoom_supported = False
         current_zoom = ZOOM_MIN
 
         cap = cv2.VideoCapture(self._camera_index)
         if not cap.isOpened():
             detector.close()
+            hs_detector.close()
             return
 
         zoom_supported = _init_zoom(cap)
@@ -60,6 +66,7 @@ class CameraThread(QThread):
         while self._running:
             if self._reset_pending:
                 detector.reset_session()
+                hs_detector.reset()
                 self._reset_pending = False
                 self._last_person_state = None
 
@@ -84,10 +91,18 @@ class CameraThread(QThread):
             if result.rep_counted:
                 self.rep_counted.emit(result.current_reps)
 
+            hs_result = hs_detector.process(frame_rgb)
+            if hs_result.entered_balance:
+                self.handstand_started.emit()
+            if hs_result.lost_balance:
+                self.handstand_lost.emit()
+            self.handstand_state.emit(hs_result.state.name)
+
             self.frame_ready.emit(_to_qimage(result.annotated_frame))
 
         cap.release()
         detector.close()
+        hs_detector.close()
 
     def stop(self) -> None:
         self._running = False
