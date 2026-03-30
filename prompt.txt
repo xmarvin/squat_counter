@@ -1,0 +1,7 @@
+We want to develop an desktop app.
+Ask question about technical choices for langauge and datastorage. Provde few best options I could choose.
+The goal of the app: Automatically count number of squats a person did and save it in some database.
+The app has access to web camera. When app starts it show full-sized window with picture from usb connected camera. When the person detected in camera, the app should highlight it with some indication.
+When person started squats, the app detected it with some ML techincs, and counting clean exercices. When person stops exercise, it save the number with date and time, clearing results, waiting for next row.
+It should be option to check history, with chart how much done per day.
+generate README and CLAUDE.md files with description after I choose frameworks and language.
